@@ -7,7 +7,15 @@ import '../bloc/todo_bloc.dart';
 import '../models/todo_model.dart';
 import 'edit_todo_screen.dart'; // Import the Create/Edit Todo Screen
 
-class TodoListScreen extends StatelessWidget {
+class TodoListScreen extends StatefulWidget {
+  @override
+  _TodoListScreenState createState() => _TodoListScreenState();
+}
+
+class _TodoListScreenState extends State<TodoListScreen> {
+  TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,18 +56,48 @@ class TodoListScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: BlocBuilder<TodoBloc, TodoState>(
-        builder: (context, state) {
-          final incompleteTasks = state.todos.where((todo) => !todo.isCompleted).toList();
-          final completedTasks = state.todos.where((todo) => todo.isCompleted).toList();
+      body: Column(
+        children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (query) {
+                setState(() {
+                  _searchQuery = query;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search tasks...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.blueAccent),
+                ),
+                prefixIcon: Icon(Icons.search, color: Colors.blueAccent),
+              ),
+            ),
+          ),
+          Expanded(
+            child: BlocBuilder<TodoBloc, TodoState>(
+              builder: (context, state) {
+                final filteredTodos = state.todos.where((todo) {
+                  return todo.title.contains(_searchQuery) || todo.description.contains(_searchQuery);
+                }).toList();
 
-          return ListView(
-            children: [
-              _buildTaskSection('Incomplete Tasks', incompleteTasks, context),
-              _buildTaskSection('Completed Tasks', completedTasks, context),
-            ],
-          );
-        },
+                final incompleteTasks = filteredTodos.where((todo) => !todo.isCompleted).toList();
+                final completedTasks = filteredTodos.where((todo) => todo.isCompleted).toList();
+
+                return ListView(
+                  children: [
+                    _buildTaskSection('Incomplete Tasks', incompleteTasks, context),
+                    _buildTaskSection('Completed Tasks', completedTasks, context),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
